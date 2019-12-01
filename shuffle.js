@@ -1,88 +1,91 @@
 #!/usr/bin/nodejs
 
-var assert = require('assert')
+var assert = require('assert');
 
+// Most decks are in Ace, 2, 3, etc order when looking at the face,
+// but are dealt from the back, so the "top" card of the deck is the
+// last one and the "bottom" card is the first in the array (the ace,
+// in the case of an unshuffled deck).
 function initialDeck(deckSize) {
-    var cards=Array()
-    for (var i of [...Array(deckSize).keys()]) {
-	cards[i] = i
-    }
-
-    return cards
-}
-
-function shuffleStandard(deckSize) {
-    var src = initialDeck(deckSize)
-    var dst = Array()
-    var srcSize = deckSize
-    for (var i of [...Array(deckSize).keys()]) {
-	var pick = Math.floor(Math.random() * srcSize)
-	dst.push(src[pick])
-	--srcSize
-	src[pick] = src[srcSize]
-    }
-    return dst
+    return [...Array(deckSize).keys()];
 }
 
 function isValidShuffle(deck) {
-    var seen = Array(deck.length).fill(false)
+    var seen = Array(deck.length).fill(false);
     for (var i of [...Array(deck.length).keys()]) {
-	if (deck[i] < 0 || deck.length <= deck[i]) {
-	    return false
+	if (deck[i] < 0 || deck.length <= deck[i] || deck[i] != Math.floor(deck[i])) {
+	    return false;
 	}
 	if (seen[deck[i]]) {
-	    return false
+	    return false;
 	}
-	seen[deck[i]] = true
+	seen[deck[i]] = true;
     }
-    return true
+    return true;
 }
 
-function firstPositionStatistics(shuffler, deckSize, numSamples) {
-    var counts = Array(deckSize).fill(0)
+function positionStatistics(position, shuffler, deckSize, numSamples) {
+    var counts = Array(deckSize).fill(0);
     for (var i = 0; i < numSamples; i++) {
-	var d = shuffler(deckSize)
-	assert(isValidShuffle(d))
-	counts[d[0]]++
+	var d = shuffler(deckSize);
+	assert(isValidShuffle(d));
+	counts[d[position]]++;
     }
     for (var i = 0; i < deckSize; i++) {
-	counts[i] = counts[i] / numSamples
+	counts[i] = counts[i] / numSamples;
     }
-    return counts
+    return counts;
 }
 
-function firstPositionVariance(shuffler, deckSize, numSamples) {
-    var prob = firstPositionStatistics(shuffler, deckSize, numSamples)
-    var expected = 1.0 / deckSize
-    var varSum = 0.0
+function lastCardStatistics(shuffler, deckSize, numSamples) {
+    return positionStatistics(0, shuffler, deckSize, numSamples);
+}
+
+function lastPositionVariance(shuffler, deckSize, numSamples) {
+    var prob = lastCardStatistics(shuffler, deckSize, numSamples);
+    var expected = 1.0 / deckSize;
+    var varSum = 0.0;
     for (var i = 0; i < deckSize; i++) {
-	var diff = expected - prob[i]
-	varSum = varSum + diff * diff
+	var diff = expected - prob[i];
+	varSum = varSum + diff * diff;
     }
-    return varSum
+    return varSum;
 }
 
-function shuffleAll(deckSize) {
-    var deck = initialDeck(deckSize)
+function shuffleStandard(deckSize) {
+    var src = initialDeck(deckSize);
+    var dst = Array();
+    var srcSize = deckSize;
+    for (var i of [...Array(deckSize).keys()]) {
+	var pick = Math.floor(Math.random() * srcSize);
+	dst.push(src[pick]);
+	--srcSize;
+	src[pick] = src[srcSize];
+    }
+    return dst;
+}
+
+function shuffleNaive(deckSize) {
+    var deck = initialDeck(deckSize);
     for (var i = 0; i < deck.length; i++) {
-	var ix = Math.floor(Math.random() * deckSize)
-	var card = deck[ix]
-	deck[ix] = deck[i]
-	deck[i] = card
+	var ix = Math.floor(Math.random() * deckSize);
+	var card = deck[ix];
+	deck[ix] = deck[i];
+	deck[i] = card;
     }
-    return deck
+    return deck;
 }
 
 function evaluateShuffles(deckSize, numSamples) {
     var shufflers = new Map([["standard", shuffleStandard],
-			["basic", shuffleAll]])
-    var results = Array()
+			     ["naïve", shuffleNaive]]);
+    var results = Array();
     for (var name of shufflers.keys()) {
-	results.push([name, firstPositionVariance(shufflers.get(name),
-						  deckSize,
-						  numSamples)])
+	results.push([name, lastPositionVariance(shufflers.get(name),
+						 deckSize,
+						 numSamples)]);
     }
-    return results
+    return results;
 }
 
-console.log(evaluateShuffles(4, 100000))
+console.log(evaluateShuffles(4, 100000));
