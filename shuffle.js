@@ -2,10 +2,11 @@
 
 var assert = require('assert');
 
-// Most decks are in Ace, 2, 3, etc order when looking at the face,
-// but are dealt from the back, so the "top" card of the deck is the
-// last one and the "bottom" card is the first in the array (the ace,
-// in the case of an unshuffled deck).
+// A new deck of cards are in ace, 2, 3, etc order when looking at the
+// face, but are dealt from the back, so the "top" card of the deck is
+// the last one and the "bottom" card is the first in the array
+// representation (the first is the king of the last suit and the last
+// is the ace of the first suit, in the case of an unshuffled deck).
 function initialDeck(deckSize) {
     return [...Array(deckSize).keys()];
 }
